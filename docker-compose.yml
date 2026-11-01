@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16
+    container_name: nara-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - nara_pgdata:/var/lib/postgresql/data
+
+    networks:
+      - nara-net
+
+    mem_limit: 512m
+    cpus: 0.75
+    shm_size: 128mb
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: nara-api
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql://${NARA_RUNTIME_USER}:${NARA_RUNTIME_PASSWORD}@db:5432/${POSTGRES_DB}
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - nara-net
+
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    mem_limit: 384m
+    cpus: 0.5
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  nara_pgdata:
+    name: nara_pgdata
+
+networks:
+  nara-net:
+    name: nara-net
+    driver: bridge

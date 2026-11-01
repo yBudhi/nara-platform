@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+backups/
+logs/
+data/
+*.dump
+*.sql
+*.tar.gz
+__pycache__/
+.venv/
+node_modules/
+auth_info/
+sessions/
