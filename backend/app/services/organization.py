@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.core.database import set_current_company_id
 from app.models.company import Company
 from app.services.audit import record_audit_event
 
@@ -17,6 +18,7 @@ def create_company(
     company = Company(name=name, slug=slug)
     session.add(company)
     session.flush()
+    set_current_company_id(session, company.id)
 
     record_audit_event(
         session,
