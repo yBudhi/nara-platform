@@ -1,22 +1,25 @@
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import psycopg
 from fastapi import FastAPI, HTTPException
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.core.config import settings
+from app.core.database import get_engine
 
 app = FastAPI(
-    title="NARA Platform API",
+    title=settings.PROJECT_NAME,
     description="Backend API for NARA Modular Business Management Platform",
-    version="0.1.0",
+    version=settings.VERSION,
 )
 
 
 @app.get("/")
 def root():
     return {
-        "application": "NARA Platform",
+        "application": settings.PROJECT_NAME,
         "status": "running",
-        "version": "0.1.0",
+        "version": settings.VERSION,
     }
 
 
@@ -24,37 +27,19 @@ def root():
 def health():
     return {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
 @app.get("/health/db")
 def database_health():
-    database_url = os.getenv("DATABASE_URL")
-
-    if not database_url:
-        raise HTTPException(
-            status_code=500,
-            detail="Database configuration is missing",
-        )
-
     try:
-        with psycopg.connect(database_url, connect_timeout=5) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT current_database(), current_user, version()"
-                )
-                database, user, version = cur.fetchone()
-
-        return {
-            "status": "connected",
-            "database": database,
-            "user": user,
-            "postgresql": version.split(",")[0],
-        }
-
-    except Exception:
+        with get_engine().connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
         raise HTTPException(
             status_code=503,
             detail="Database connection failed",
         )
+
+    return {"status": "connected"}
