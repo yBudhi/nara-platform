@@ -1,8 +1,9 @@
 import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.models.company import Company
 from app.models.membership import CompanyMembership
 from app.models.user import User
-from sqlalchemy.exc import IntegrityError
 
 
 def test_create_user(db_session):

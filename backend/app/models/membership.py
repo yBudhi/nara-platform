@@ -34,4 +34,9 @@ class CompanyMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "company_id", name="uq_user_company_membership"),
+        UniqueConstraint(
+            "id",
+            "company_id",
+            name="uq_company_memberships_id_company",
+        ),
     )

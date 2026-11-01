@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.api.routes.auth import router as auth_router
+from app.api.routes.incidents import router as incidents_router
 from app.core.config import settings
 from app.core.database import get_engine
 
@@ -12,6 +14,9 @@ app = FastAPI(
     description="Backend API for NARA Modular Business Management Platform",
     version=settings.VERSION,
 )
+
+app.include_router(auth_router)
+app.include_router(incidents_router)
 
 
 @app.get("/")

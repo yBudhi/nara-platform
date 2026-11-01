@@ -7,6 +7,7 @@ from app.core.database import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.models.membership import CompanyMembership
+    from app.models.rbac import Role
 
 
 class Company(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -18,6 +19,11 @@ class Company(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     memberships: Mapped[list["CompanyMembership"]] = relationship(
         "CompanyMembership",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+    roles: Mapped[list["Role"]] = relationship(
+        "Role",
         back_populates="company",
         cascade="all, delete-orphan",
     )

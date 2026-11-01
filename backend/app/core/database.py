@@ -5,7 +5,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from functools import lru_cache
 
-from sqlalchemy import DateTime, Uuid, create_engine
+from sqlalchemy import DateTime, Uuid, create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -69,3 +69,15 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def set_current_company_id(session: Session, company_id: uuid.UUID | None) -> None:
+    value = str(company_id) if company_id is not None else ""
+    if session.get_bind().dialect.name != "postgresql":
+        session.info["current_company_id"] = value or None
+        return
+
+    session.execute(
+        text("SELECT set_config('app.current_company_id', :company_id, true)"),
+        {"company_id": value},
+    )

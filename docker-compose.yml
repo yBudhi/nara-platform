@@ -50,6 +50,7 @@ services:
       ALEMBIC_DATABASE_URL: postgresql+psycopg://${NARA_MIGRATOR_USER:-nara_migrator}:${NARA_MIGRATOR_PASSWORD}@db:5432/${POSTGRES_DB}
       ALEMBIC_MIGRATOR_ROLE: ${NARA_MIGRATOR_USER:-nara_migrator}
       ALEMBIC_OWNER_ROLE: ${NARA_OWNER_USER:-nara_owner}
+      ALEMBIC_RUNTIME_ROLE: ${NARA_RUNTIME_USER:-nara_runtime}
 
     command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
 

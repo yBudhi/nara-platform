@@ -9,7 +9,21 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-0123456789abcdef")
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 
 from app.core.database import Base
-from app.models import Company, CompanyMembership, User  # noqa: F401
+from app.models import (  # noqa: F401
+    AuditLog,
+    Company,
+    CompanyMembership,
+    CompanyModule,
+    Incident,
+    IncidentCounter,
+    Module,
+    ModuleDependency,
+    Permission,
+    Role,
+    RolePermission,
+    User,
+    UserRole,
+)
 
 
 @pytest.fixture(scope="function")
