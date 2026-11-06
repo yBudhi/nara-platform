@@ -10,7 +10,6 @@ services:
     environment:
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://nara-n8n:5678/webhook/wa-agent}
       N8N_WEBHOOK_TOKEN: ${N8N_WEBHOOK_TOKEN:-}
-      WHATSAPP_ALLOWED_SENDERS: ${WHATSAPP_ALLOWED_SENDERS:-}
       WHATSAPP_AUTH_DIR: /app/auth
 
     volumes:

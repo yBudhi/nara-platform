@@ -22,41 +22,6 @@ const RECONNECT_MAX_MS = 60000;
 const normalizeJid = (jid) =>
   jid ? jid.replace(/:\d+@/, '@').toLowerCase() : '';
 
-function parseAllowedSenders(raw) {
-  return (raw || '')
-    .split(',')
-    .map(value => value.trim())
-    .filter(Boolean)
-    .map(value => {
-      const jid = normalizeJid(value);
-      const isJid = jid.includes('@');
-      const digits = isJid ? '' : jid.replace(/\D/g, '');
-      return { jid: isJid ? jid : '', digits };
-    })
-    .filter(entry => entry.jid || entry.digits);
-}
-
-const ALLOWED_SENDERS = parseAllowedSenders(
-  process.env.WHATSAPP_ALLOWED_SENDERS
-);
-
-function isAllowedSender(senderJid) {
-  const normalized = normalizeJid(senderJid);
-  if (!normalized) return false;
-
-  const [localPart] = normalized.split('@');
-  const isPhoneJid =
-    normalized.endsWith('@s.whatsapp.net') ||
-    normalized.endsWith('@c.us');
-  const digits = isPhoneJid ? localPart.replace(/\D/g, '') : '';
-
-  return ALLOWED_SENDERS.some(entry => {
-    if (entry.jid && entry.jid === normalized) return true;
-    if (entry.digits && digits && entry.digits === digits) return true;
-    return false;
-  });
-}
-
 let reconnectDelay = RECONNECT_START_MS;
 let reconnectTimer = null;
 let restartingForPairing = false;
@@ -124,12 +89,6 @@ const startWhatsApp = async () => {
   const { state, saveCreds } =
     await useMultiFileAuthState(AUTH_DIR);
 
-  if (ALLOWED_SENDERS.length === 0) {
-    console.log(
-      'WHATSAPP_ALLOWED_SENDERS kosong: semua pesan akan ditolak.'
-    );
-  }
-
   const sock = makeWASocket({
     auth: state,
     logger: pino({ level: 'silent' })
@@ -182,18 +141,6 @@ const startWhatsApp = async () => {
       if (!jid || jid === 'status@broadcast') continue;
 
       const isGroup = jid.endsWith('@g.us');
-      const isPrivate = !isGroup;
-
-      // Pengirim di grup ada di participant, di chat pribadi ada di remoteJid.
-      const senderJid = isGroup ? msg.key.participant : jid;
-
-      if (!isAllowedSender(senderJid)) {
-        console.log(
-          'Pesan ditolak dari pengirim tidak diizinkan:',
-          normalizeJid(senderJid) || '(tidak diketahui)'
-        );
-        continue;
-      }
 
       const text = extractText(msg.message).trim();
       if (!text) continue;

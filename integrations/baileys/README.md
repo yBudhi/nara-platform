@@ -16,7 +16,6 @@ forwards questions to the n8n webhook before sending the reply back to WhatsApp.
 | --- | --- | --- |
 | `N8N_WEBHOOK_URL` | No | n8n webhook URL. Default: `http://nara-n8n:5678/webhook/wa-agent` |
 | `N8N_WEBHOOK_TOKEN` | No | Token sent as `Authorization: Bearer <token>`. Configure the same header in the n8n webhook. |
-| `WHATSAPP_ALLOWED_SENDERS` | Yes | Comma-separated allowlist of phone numbers or JIDs. If empty, all messages are rejected (fail closed). |
 | `WHATSAPP_AUTH_DIR` | No | Session directory inside the container. Default: `./auth`; Compose sets `/app/auth`. |
 
 Example:
@@ -24,11 +23,10 @@ Example:
 ```env
 N8N_WEBHOOK_URL=http://nara-n8n:5678/webhook/wa-agent
 N8N_WEBHOOK_TOKEN=CHANGE_ME_N8N_WEBHOOK_TOKEN
-WHATSAPP_ALLOWED_SENDERS=6281234567890,6289876543210
 ```
 
-For groups, the actual message sender must be in the allowlist and the message
-must still mention NARA or reply to a NARA message.
+Private messages are accepted from any sender. In groups, NARA responds only
+when it is mentioned or when the message replies to a NARA message.
 
 ## Deploy
 
