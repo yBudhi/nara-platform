@@ -1,0 +1,38 @@
+services:
+  baileys:
+    build:
+      context: ./integrations/baileys
+      dockerfile: Dockerfile
+    image: nara-baileys:local
+    container_name: nara-baileys
+    restart: unless-stopped
+
+    environment:
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://nara-n8n:5678/webhook/wa-agent}
+      N8N_WEBHOOK_TOKEN: ${N8N_WEBHOOK_TOKEN:-}
+      WHATSAPP_ALLOWED_SENDERS: ${WHATSAPP_ALLOWED_SENDERS:-}
+      WHATSAPP_AUTH_DIR: /app/auth
+
+    volumes:
+      - nara_baileys_auth:/app/auth
+
+    networks:
+      - nara-net
+
+    mem_limit: 256m
+    cpus: 0.5
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  nara_baileys_auth:
+    name: nara_baileys_auth
+
+networks:
+  nara-net:
+    external: true
+    name: nara-net
