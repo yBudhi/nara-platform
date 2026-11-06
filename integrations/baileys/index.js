@@ -19,8 +19,86 @@ const AUTH_DIR = './auth';
 const RECONNECT_START_MS = 2000;
 const RECONNECT_MAX_MS = 60000;
 
+const QUOTA_FALLBACK_MESSAGE =
+  'Aduh, maaf ya! 😅 Sepertinya NARA lagi agak sibuk nih, jadi belum bisa merespons pertanyaan kamu dengan maksimal.\n\n' +
+  'Boleh coba beberapa saat lagi ya? NARA segera kembali untuk bantu kamu. Terima kasih sudah sabar menunggu! 🙏';
+
+const SERVICE_UNAVAILABLE_FALLBACK_MESSAGE =
+  'Maaf ya, layanan NARA sedang tidak tersedia untuk sementara. Silakan coba beberapa saat lagi. 🙏';
+
+const NETWORK_TIMEOUT_FALLBACK_MESSAGE =
+  'Maaf ya, NARA membutuhkan waktu terlalu lama untuk merespons. Silakan coba beberapa saat lagi. 🙏';
+
+const GENERIC_FALLBACK_MESSAGE =
+  'Maaf, AI belum bisa memproses pertanyaan saat ini. Coba lagi nanti.';
+
 const normalizeJid = (jid) =>
   jid ? jid.replace(/:\d+@/, '@').toLowerCase() : '';
+
+function getErrorDetails(error) {
+  return [
+    error?.message,
+    error?.responseBody,
+    error?.cause?.message,
+    error?.code
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function isQuotaError(error) {
+  const status = error?.status ?? error?.statusCode;
+  const details = getErrorDetails(error);
+
+  return (
+    status === 429 ||
+    details.includes('429') ||
+    details.includes('resource_exhausted') ||
+    details.includes('resource exhausted') ||
+    details.includes('quota') ||
+    details.includes('rate limit') ||
+    details.includes('rate-limit') ||
+    details.includes('ratelimit') ||
+    details.includes('too many requests')
+  );
+}
+
+function isTimeoutError(error) {
+  const details = getErrorDetails(error);
+
+  return (
+    error?.name === 'TimeoutError' ||
+    error?.name === 'AbortError' ||
+    details.includes('timeout') ||
+    details.includes('timed out') ||
+    details.includes('aborted')
+  );
+}
+
+function isServiceUnavailableError(error) {
+  const status = error?.status ?? error?.statusCode;
+  const details = getErrorDetails(error);
+
+  return (
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    details.includes('service unavailable') ||
+    details.includes('econnrefused') ||
+    details.includes('econnreset') ||
+    details.includes('enotfound') ||
+    details.includes('fetch failed') ||
+    details.includes('socket hang up')
+  );
+}
+
+function getFallbackMessage(error) {
+  if (isQuotaError(error)) return QUOTA_FALLBACK_MESSAGE;
+  if (isTimeoutError(error)) return NETWORK_TIMEOUT_FALLBACK_MESSAGE;
+  if (isServiceUnavailableError(error)) return SERVICE_UNAVAILABLE_FALLBACK_MESSAGE;
+  return GENERIC_FALLBACK_MESSAGE;
+}
 
 let reconnectDelay = RECONNECT_START_MS;
 let reconnectTimer = null;
@@ -230,9 +308,11 @@ const startWhatsApp = async () => {
         });
 
         if (!response.ok) {
-          throw new Error(
-            `n8n HTTP ${response.status}: ${await response.text()}`
-          );
+          const responseBody = await response.text();
+          const error = new Error(`n8n HTTP ${response.status}`);
+          error.status = response.status;
+          error.responseBody = responseBody;
+          throw error;
         }
 
         const data = await response.json();
@@ -316,8 +396,15 @@ const startWhatsApp = async () => {
       } catch (error) {
         console.error('Gagal memproses pesan:', error.message);
 
+        if (error.status || error.responseBody) {
+          console.error('Detail error n8n:', {
+            status: error.status,
+            responseBody: error.responseBody
+          });
+        }
+
         await sock.sendMessage(jid, {
-          text: 'Maaf, AI belum bisa memproses pertanyaan saat ini. Coba lagi nanti.'
+          text: getFallbackMessage(error)
         }, { quoted: msg });
       }
     }
